@@ -20,7 +20,7 @@ export const Generate = () => {
   ): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/openai/generate', {
+      const response = await fetch('http://localhost:3200/openai/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export const Generate = () => {
     <main>
       <section>
         <form onSubmit={handleSubmit}>
-          <h1>Generate</h1>
+          <h1>Generate Image</h1>
           <div className='Inputs'>
             <div className='Input-Group'>
               <label>Enter your Prompt</label>
@@ -57,7 +57,7 @@ export const Generate = () => {
                 id='prompt'
                 required
                 autoComplete='off'
-                placeholder='Boy on the moon...'
+                placeholder='ET on the moon...'
               />
             </div>
             <div className='Input-Group'>
@@ -81,7 +81,7 @@ export const Generate = () => {
         </form>
       </section>
       {isLoading ? (
-        <p>Pixel by pixel...</p>
+        <p>now making image...</p>
       ) : (
         <section className='Image'>
           <div>

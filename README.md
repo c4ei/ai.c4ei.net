@@ -37,3 +37,10 @@ npm run dev
 ```
 npm run dev
 ```
+
+cd /home/dev/www/ai/ai.c4ei.net/back-end
+yarn start
+/home/dev/www/ai/ai.c4ei.net/front-end
+yarn dev
+
+yarn build
