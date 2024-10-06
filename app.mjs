@@ -30,10 +30,10 @@ app.get('/stream', async (req, res) => {
     fullMessage += part.message.content;  // 메시지 조각을 계속 추가
   }
 
-  // 줄바꿈 문자를 없애거나 원하는 방식으로 처리
-  fullMessage = fullMessage.replace(/\n/g, ' ');  // 모든 줄바꿈을 공백으로 바꾸기
-  res.write(`data: ${fullMessage}\n\n`);  // 한 번에 전송
+  // 줄바꿈 문자를 HTML의 <br>로 변환
+  fullMessage = fullMessage.replace(/\n/g, '<br>');  // 모든 줄바꿈을 <br>로 바꾸기
 
+  res.write(`data: ${fullMessage}\n\n`);  // 한 번에 전송
   res.end();
 });
 
