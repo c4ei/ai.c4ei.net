@@ -5,122 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat with AI</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f0f4f8;
-    }
-    .chat-container {
-      width: 96%;
-      background-color: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .chat-header {
-      font-size: 1.2em;
-      text-align: center;
-      font-weight: bold;
-      color: #4a90e2;
-      margin-bottom: 10px;
-    }
-    .chat-box {
-      height: 250px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      padding: 10px;
-      overflow-y: auto;
-      background-color: #fafafa;
-    }
-    .chat-box .message {
-      margin-bottom: 10px;
-    }
-    .chat-box .message.user {
-      text-align: right;
-      color: #333;
-    }
-    .chat-box .message.bot {
-      text-align: left;
-      color: #4a90e2;
-    }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-      font-size: 1em;
-    }
-    .chat-input button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      background-color: #4a90e2;
-      color: white;
-      cursor: pointer;
-      font-size: 1em;
-    }
-    .chat-input button:hover {
-      background-color: #357ABD;
-    }
-        /* #### spinner start ####  */
-        .spin_container {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      /* background-color: transparent; 완전 투명 */
-      background-color: rgba(255, 255, 255, 0.7); /* 흰색의 70% 투명도 */
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
-    .spinner {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .dot {
-      width: 15px;
-      height: 15px;
-      margin: 0 5px;
-      background-color: #3498db; /* Blue */
-      border-radius: 50%;
-      animation: dot-flashing 1s infinite ease-in-out both;
-    }
-    .dot:nth-child(1) {
-      animation-delay: 0s;
-    }
-    .dot:nth-child(2) {
-      animation-delay: 0.1s;
-    }
-    .dot:nth-child(3) {
-      animation-delay: 0.2s;
-    }
-    @keyframes dot-flashing {
-      0%, 80%, 100% {
-          transform: scale(1);
-      }
-      40% {
-          transform: scale(1.5);
-      }
-    }
-    /* #### spinner end ####  */
-  </style>
+  <link rel="stylesheet" href="/css/style.css"> <!-- Link to external CSS -->
 </head>
 <body>
   <div class="spin_container">
@@ -131,19 +16,9 @@
     </div>
   </div>
 
-  <script>
-    function fn_showSpinner() {
-          document.getElementsByClassName('spin_container')[0].style.display='flex'; // Changed to 'flex' for centering
-      }
-      function fn_hideSpinner() {
-          document.getElementsByClassName('spin_container')[0].style.display='none';
-      }
-  </script>
   <div class="chat-container">
     <div class="chat-header">AI Chat - <a href="https://c4ei.net/home" target="_blank" style="margin-left: 20px; line-height: 1; font-size: 1em;">AAH구매하기</a></div>
-    <div id="chat-box" class="chat-box">
-      <!-- Chat messages will be displayed here -->
-    </div>
+    <div id="chat-box" class="chat-box"></div> <!-- Chat messages will be displayed here -->
     <div class="chat-input">
       <input type="text" id="chat-input" placeholder="질문을 입력하세요..." />
       <button id="send-btn">보내기</button>
@@ -155,96 +30,7 @@
     </div>
   </div>
 
-  <script>
-    const chatBox = document.getElementById('chat-box');
-    const chatInput = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-btn');
-    const streamModeCheckbox = document.getElementById('stream-mode');
-  
-    function addMessage(content, sender) {
-      const messageDiv = document.createElement('div');
-      messageDiv.classList.add('message', sender);
-      messageDiv.textContent = content;
-      chatBox.appendChild(messageDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to the latest message
-    }
-  
-    sendBtn.addEventListener('click', async () => {
-      const userMessage = chatInput.value;
-      if (!userMessage) return;
-      fn_showSpinner();
-      // Add user message to chat
-      addMessage(userMessage, 'user');
-
-      // Determine if streaming mode is enabled
-      const streamMode = streamModeCheckbox.checked;
-      const url = streamMode ? '/stream?message=' : '/chat?message=';
-
-      // Send the user message to the server
-      try {
-        if (streamMode) {
-          const response = await fetch(url + encodeURIComponent(userMessage));
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let done = false;
-          let buffer = '';  // Buffer to accumulate parts of the response
-
-          while (!done) {
-            const { value, done: readerDone } = await reader.read();
-            done = readerDone;
-            const chunk = decoder.decode(value, { stream: true });
-
-            // Append the chunk to the buffer
-            buffer += chunk;
-
-            // Split the buffer by lines (because SSE data uses newlines to separate events)
-            const lines = buffer.split('\n');
-
-            // Process each line (except the last one, which might be incomplete)
-            for (let i = 0; i < lines.length - 1; i++) {
-              if (lines[i].startsWith('data: ')) {
-                // Remove "data: " and add the remaining content to the chat
-                let content = lines[i].substring(6).trim(); // Trim to remove leading/trailing whitespaces and newlines
-                if (content) {
-                  addMessage(content, 'bot');
-                }
-              }
-            }
-
-            // Keep the last part in the buffer (it might be incomplete)
-            buffer = lines[lines.length - 1];
-          }
-
-          // Handle any remaining buffer content
-          if (buffer.startsWith('data: ')) {
-            let content = buffer.substring(6).trim(); // Trim to remove unnecessary newlines
-            if (content) {
-              addMessage(content, 'bot');
-            }
-          }
-        } else {
-          const response = await fetch(url + encodeURIComponent(userMessage));
-          const data = await response.text();
-          // Add bot response to chat
-          addMessage(data, 'bot');
-        }
-      } catch (error) {
-        addMessage('Error: ' + error.message, 'bot');
-      }
-
-      chatInput.value = '';
-      fn_hideSpinner();
-    });
-
-    // Allow pressing Enter to send message
-    chatInput.addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault(); // Prevent default action (form submission)
-        sendBtn.click(); // Simulate button click
-      }
-    });
-  </script>
-  
+  <script src="/js/spinner.js"></script> <!-- Link to spinner JavaScript -->
+  <script src="/js/chat.js"></script> <!-- Link to chat handling JavaScript -->
 </body>
-
 </html>

@@ -1,6 +1,8 @@
 // /app.mjs
 import express from 'express';
 import ollama from 'ollama'
+import compression from'compression';
+
 
 const app = express();
 const port = 3010;
@@ -8,6 +10,9 @@ const port = 3010;
 // Set the view engine to EJS
 app.set('view engine', 'ejs');
 app.set('views', './views');
+app.use(express.static('public'));
+app.use(compression());
+
 
 // Home route - renders the streaming page
 app.get('/', (req, res) => {
