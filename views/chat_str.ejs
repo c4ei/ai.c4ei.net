@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ollama Stream</title>
+</head>
+<body>
+  <h1>Ollama Streaming Example</h1>
+  <div id="stream-container">
+    <p>Loading stream...</p>
+  </div>
+
+  <script>
+    const streamContainer = document.getElementById('stream-container');
+
+    const eventSource = new EventSource('/stream');
+
+    eventSource.onmessage = function (event) {
+      const newParagraph = document.createElement('p');
+      newParagraph.textContent = event.data;
+      streamContainer.appendChild(newParagraph);
+    };
+
+    eventSource.onerror = function (error) {
+      console.error('Stream error:', error);
+    };
+  </script>
+</body>
+</html>
