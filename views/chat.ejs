@@ -16,7 +16,7 @@
       background-color: #f0f4f8;
     }
     .chat-container {
-      width: 400px;
+      width: 96%;
       background-color: white;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -78,7 +78,7 @@
 </head>
 <body>
   <div class="chat-container">
-    <div class="chat-header">AI Chat</div>
+    <div class="chat-header">AI Chat - <a href="https://c4ei.net/home" target="_blank" style="margin-left: 20px; line-height: 1; font-size: 1em;">AAH구매하기</a></div>
     <div id="chat-box" class="chat-box">
       <!-- Chat messages will be displayed here -->
     </div>
@@ -86,13 +86,19 @@
       <input type="text" id="chat-input" placeholder="질문을 입력하세요..." />
       <button id="send-btn">보내기</button>
     </div>
+    <div class="options">
+      <label>
+        <input type="checkbox" id="stream-mode" /> Stream Mode
+      </label>
+    </div>
   </div>
 
   <script>
     const chatBox = document.getElementById('chat-box');
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
-
+    const streamModeCheckbox = document.getElementById('stream-mode');
+  
     function addMessage(content, sender) {
       const messageDiv = document.createElement('div');
       messageDiv.classList.add('message', sender);
@@ -100,7 +106,7 @@
       chatBox.appendChild(messageDiv);
       chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to the latest message
     }
-
+  
     sendBtn.addEventListener('click', async () => {
       const userMessage = chatInput.value;
       if (!userMessage) return;
@@ -108,13 +114,58 @@
       // Add user message to chat
       addMessage(userMessage, 'user');
 
+      // Determine if streaming mode is enabled
+      const streamMode = streamModeCheckbox.checked;
+      const url = streamMode ? '/stream?message=' : '/chat?message=';
+
       // Send the user message to the server
       try {
-        const response = await fetch('/chat?message=' + encodeURIComponent(userMessage));
-        const data = await response.text();
+        if (streamMode) {
+          const response = await fetch(url + encodeURIComponent(userMessage));
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let done = false;
+          let buffer = '';  // Buffer to accumulate parts of the response
 
-        // Add bot response to chat
-        addMessage(data, 'bot');
+          while (!done) {
+            const { value, done: readerDone } = await reader.read();
+            done = readerDone;
+            const chunk = decoder.decode(value, { stream: true });
+
+            // Append the chunk to the buffer
+            buffer += chunk;
+
+            // Split the buffer by lines (because SSE data uses newlines to separate events)
+            const lines = buffer.split('\n');
+
+            // Process each line (except the last one, which might be incomplete)
+            for (let i = 0; i < lines.length - 1; i++) {
+              if (lines[i].startsWith('data: ')) {
+                // Remove "data: " and add the remaining content to the chat
+                let content = lines[i].substring(6).trim(); // Trim to remove leading/trailing whitespaces and newlines
+                if (content) {
+                  addMessage(content, 'bot');
+                }
+              }
+            }
+
+            // Keep the last part in the buffer (it might be incomplete)
+            buffer = lines[lines.length - 1];
+          }
+
+          // Handle any remaining buffer content
+          if (buffer.startsWith('data: ')) {
+            let content = buffer.substring(6).trim(); // Trim to remove unnecessary newlines
+            if (content) {
+              addMessage(content, 'bot');
+            }
+          }
+        } else {
+          const response = await fetch(url + encodeURIComponent(userMessage));
+          const data = await response.text();
+          // Add bot response to chat
+          addMessage(data, 'bot');
+        }
       } catch (error) {
         addMessage('Error: ' + error.message, 'bot');
       }
@@ -125,9 +176,12 @@
     // Allow pressing Enter to send message
     chatInput.addEventListener('keypress', (event) => {
       if (event.key === 'Enter') {
-        sendBtn.click();
+        event.preventDefault(); // Prevent default action (form submission)
+        sendBtn.click(); // Simulate button click
       }
     });
   </script>
+  
 </body>
+
 </html>
