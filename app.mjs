@@ -1,8 +1,19 @@
 // /app.mjs
 import express from 'express';
 import ollama from 'ollama'
-import compression from'compression';
+import compression from 'compression';
+import axios from 'axios'; // for HTTP requests to Llama 3.2
 
+// import openai
+
+// openai.base_url = "http://localhost:11434/v1"
+// openai.api_key = 'ollama'
+
+// response = openai.chat.completions.create(
+// 	model="llama3.1",
+// 	messages=messages,
+// 	tools=tools,
+// )
 
 const app = express();
 const port = 3010;
@@ -18,6 +29,58 @@ app.use(compression());
 app.get('/', (req, res) => {
   res.render('chat');
 });
+
+app.get('/i', (req, res) => {
+  res.render('index');
+});
+
+// Route to handle the request
+app.post('/get-result', async (req, res) => {
+  const { inputText, streaming } = req.body;
+  const llamaUrl = 'http://119.202.171.43:11434/api/chat'; // Update with Llama IP and port
+
+  // Check if streaming is enabled
+  if (streaming) {
+      const clientId = req.query.clientId || Math.random().toString(36).substring(2);
+
+      // Send headers for streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      try {
+          // Stream the results
+          const llamaStream = await axios({
+              method: 'POST',
+              url: llamaUrl,
+              data: { input: inputText },
+              responseType: 'stream',
+          });
+
+          llamaStream.data.on('data', chunk => {
+              res.write(`data: ${chunk.toString()}\n\n`);
+          });
+
+          llamaStream.data.on('end', () => {
+              res.write(`data: [END]\n\n`);
+              res.end();
+          });
+      } catch (error) {
+          res.write(`data: Error: ${error.message}\n\n`);
+          res.end();
+      }
+  } else {
+      // Non-streaming request
+      try {
+          const response = await axios.post(llamaUrl, { input: inputText });
+          res.json(response.data);
+      } catch (error) {
+          res.status(500).send(`Error: ${error.message}`);
+      }
+  }
+});
+
 
 // Streaming route /app.mjs
 app.get('/stream', async (req, res) => {

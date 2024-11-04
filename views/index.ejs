@@ -1,0 +1,45 @@
+<!-- views/index.ejs -->
+<html>
+<head>
+    <title>Llama 3.2 Interaction</title>
+    <script>
+        function submitForm() {
+            const streaming = document.getElementById('streaming').checked;
+            if (streaming) {
+                const evtSource = new EventSource(`/get-result?inputText=${document.getElementById('inputText').value}&streaming=true`);
+                evtSource.onmessage = function(event) {
+                    if (event.data === '[END]') {
+                        evtSource.close();
+                    } else {
+                        document.getElementById('result').innerText += event.data;
+                    }
+                };
+            } else {
+                fetch('/get-result', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        inputText: document.getElementById('inputText').value,
+                        streaming: false,
+                    })
+                }).then(response => response.json())
+                  .then(data => {
+                      document.getElementById('result').innerText = JSON.stringify(data);
+                  });
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Llama 3.2 Interaction</h1>
+    <form onsubmit="event.preventDefault(); submitForm();">
+        <label for="inputText">Input Text:</label>
+        <input type="text" id="inputText" name="inputText" required><br><br>
+        <label for="streaming">Enable Streaming:</label>
+        <input type="checkbox" id="streaming" name="streaming"><br><br>
+        <button type="submit">Submit</button>
+    </form>
+    <h2>Result:</h2>
+    <div id="result"></div>
+</body>
+</html>
