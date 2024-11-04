@@ -25,6 +25,12 @@ app.use(express.static('public'));
 app.use(compression());
 
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Set up EJS for templating
+app.set('view engine', 'ejs');
+
 // Home route - renders the streaming page
 app.get('/', (req, res) => {
   res.render('chat');
