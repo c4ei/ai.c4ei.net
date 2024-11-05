@@ -40,50 +40,55 @@ app.get('/i', (req, res) => {
   res.render('index');
 });
 
+const llamaUrl = 'http://119.202.171.43:11434/api'; // Update with Llama IP and port
+
 // Route to handle the request
 app.post('/get-result', async (req, res) => {
   const { inputText, streaming } = req.body;
-  const llamaUrl = 'http://119.202.171.43:11434/api/chat'; // Update with Llama IP and port
+  // console.log(`inputText : ${inputText}, streaming : ${streaming}`);
 
   // Check if streaming is enabled
   if (streaming) {
-      const clientId = req.query.clientId || Math.random().toString(36).substring(2);
+    console.log(`streaming request : ${inputText}`);
+    const clientId = req.query.clientId || Math.random().toString(36).substring(2);
 
-      // Send headers for streaming
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.flushHeaders();
+    // Send headers for streaming
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
 
-      try {
-          // Stream the results
-          const llamaStream = await axios({
-              method: 'POST',
-              url: llamaUrl,
-              data: { input: inputText },
-              responseType: 'stream',
-          });
+    try {
+        // Stream the results
+        const llamaStream = await axios({
+            method: 'POST',
+            url: llamaUrl,
+            data: { input: inputText },
+            responseType: 'stream',
+        });
 
-          llamaStream.data.on('data', chunk => {
-              res.write(`data: ${chunk.toString()}\n\n`);
-          });
+        llamaStream.data.on('data', chunk => {
+            res.write(`data: ${chunk.toString()}\n\n`);
+        });
 
-          llamaStream.data.on('end', () => {
-              res.write(`data: [END]\n\n`);
-              res.end();
-          });
-      } catch (error) {
-          res.write(`data: Error: ${error.message}\n\n`);
-          res.end();
-      }
+        llamaStream.data.on('end', () => {
+            res.write(`data: [END]\n\n`);
+            res.end();
+        });
+    } catch (error) {
+        res.write(`data: Error: ${error.message}\n\n`);
+        res.end();
+    }
   } else {
-      // Non-streaming request
-      try {
-          const response = await axios.post(llamaUrl, { input: inputText });
-          res.json(response.data);
-      } catch (error) {
-          res.status(500).send(`Error: ${error.message}`);
-      }
+    console.log(`Non-streaming request : ${inputText}`);
+    try {
+        const response = await axios.post(llamaUrl, { input: inputText });
+        console.log(`response.data:${response.data}`);
+        res.json(response.data);
+    } catch (error) {
+      console.log(`error:${error}`);
+      res.status(500).send(`Error: ${error.message}`);
+    }
   }
 });
 
